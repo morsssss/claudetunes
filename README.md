@@ -91,6 +91,8 @@ because Claude is wary of providing or modifying anything that might be copyrigh
 
 **Don't reprompt for the same information:** I had to change the system so that, if the user requested only lyrics changes, we only reprompted the lyrics agent. If the user requested only music chagnes, we only reprompted the music agent. Otherwise, sometimes the user would find that, for example, they asked for lyrics in French, but suddenly the music got shorter. LLMs are nondeterministic by design, and I did not use a `temperature` of 0.
 
+**Our web app is stateless, and so is our agent:** Our web app stores all its state in the UI. We generate each request to Claude based on what's in the UI. Thus there's no need to store up our conversation with Claude and pass it along each time. (Although I am willing to be wrong here.)
+
 **Web app choices:** I made what I thought were some quite interesting choices in the web app, but I know we're not as curious about those here.
 
 ## Why this demo?

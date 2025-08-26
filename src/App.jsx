@@ -14,6 +14,8 @@ function App() {
   const [claudeConversation, setClaudeConversation] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Instead of erasing the contents of the Conversation Area each time we want to put something there,
+  // append new content to existing content.
   function addToConversation (text) {
     setClaudeConversation(prev => prev ? `${prev}\n\n${text}` : text);
   };
@@ -22,7 +24,6 @@ function App() {
     setSongData(prev => ({ ...prev, title: song }));
   }
 
- 
   function handleCustomization (field, value) {
     setSongData(prev => ({ ...prev, [field]: value }));
   }

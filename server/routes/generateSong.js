@@ -1,28 +1,25 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 
 /*
-## About this app:
-This is a web app to play common songs with fun variations in the notes and lyrics.
-User makes selections in UI.
-When they click "Generate", we assemble a prompt to ask Claude for what they're requesting.
-Then we get the output and stick it in the notes and lyrics areas.
-The user can press "play" to play the song.
-In a future version, perhaps we could sing the song too!
-
-## Prompting Claude
-Claude is better with music-related tasks if we tell it in the system prompt that it's a musician.
-And it's better with lyrics tasks if we tell it it's a great lyricist and poet.
-So we use system prompts to create, essentially, the musician agent and the lyricist agent.
-
-As a classic web app, this is fundamentaly stateless - one request from a user doesn't depend on previous ones.
-This doesn't depend on chat history, so we don't store that and send it to Claude on every request.
-But because we do have longish instructions for each agent, we use the cache to make this more efficient.
-
-*/
-
-/* Discuss how we used Workbench etc to hone prompts, what we changed to improve things. 
-For example, instructing the model to not include extra text near the JSON etc.
-*/
+ * This is where the magic happens - where we generate prompts based on song data and changes the user's requested,
+ * where we pass those to Claude along with our standard instructions, and where
+ * we gather music and lyrics data from its response.
+ * 
+ * Our prompts are constructed to strongly encourage Claude to give us the data we need in ways we can count on.
+ * We ask it to give us music and lyrics within XML tags - 
+ * and only the final music and lyrics, not what it's thinking about along the way,
+ * and not the original music and lyrics it may want to quote before writing new ones.
+ * 
+ * Claude is better with music-related tasks if we tell it in the system prompt that it's a musician.
+ * And it's much better with lyrics tasks if we tell it it's a great lyricist and poet.
+ * Too many instructions may keep it from staying on course optimally for either music or words tasks.
+ * So we use system prompts to create, essentially, a musician agent and a poet agent.
+ * 
+ *
+ * As a classic web app, this is fundamentaly stateless - one request from a user doesn't depend on previous ones.
+ * This doesn't depend on chat history, so we don't store that and send it to Claude on every request.
+ * But because we do have longish instructions for each agent, we use the cache to make this more efficient.
+ */
 
 const musicAgentPrompts = {
   system: 'You are an expert musician who knows standard songs and has excellent basic music theory skills',
@@ -74,21 +71,22 @@ If it helps to change the meaning of the words to make them match the original s
 };
 
 /* If they change the title, mode, time signature, or inversion, we'll want to generate new music.
-* If they change the title, language, topic, we'll want to generate new lyrics.
-* Don't regenerate anything which the user doesn't expect to change... because it might change anyway :)
-*/
+ * If they change the title, language, topic, we'll want to generate new lyrics.
+ * Don't regenerate anything which the user doesn't expect to change... because it might change anyway!
+ */
 const musicChangeTriggers = new Set(['title', 'mode', 'timeSignature', 'inversion']);
 const lyricChangeTriggers = new Set(['title', 'language', 'topic']);
 
 /* Generate song when the user requests it, by gathering up data from the UI, assembling this into a prompt, 
-// and presenting this to Claude.
-// get input from our musician and poet agents, and assemble the result.
-We'll need to return the new song data, plus the prompt we sent to Claude, plus Claude's output.
-*/
+ * and presenting this to Claude.
+ * Get input from our musician and poet agents, and assemble the result.
+ * We'll need to return the new song data, plus the prompt we sent to Claude, plus Claude's output.
+ */
 async function generateSong(songData, originalSongData) {
   const changes = findChangedProps(songData, originalSongData);
   let fullPrompt = '', fullResponse = '';
 
+  // if any elements the user's customized match what we know should trigger a new music generation, do so
   if (setsIntersect(changes, musicChangeTriggers)) {
     const { prompt, response, newData } = await askMusicianAgent(songData, changes);
     songData = { ...songData, ...newData };
@@ -105,6 +103,7 @@ async function generateSong(songData, originalSongData) {
 
   return { updatedSongData: songData, prompt: fullPrompt, response: fullResponse };
 }
+
 
 /*** MUSIC AGENT ***/
 
@@ -146,11 +145,10 @@ async function askMusicianAgent(songData, changes) {
 }
 
 /* Build a prompt for Claude from the stuff in our UI:
-* - tune name
-* - time signature: an integer like 3 or 4
-* - inversion: "inverted" or "regular"
-*/
-
+ * - tune name
+ * - time signature: an integer like 3 or 4
+ * - inversion: "inverted" or "regular"
+ */
 function buildMusicPrompt(songData, changes) {
   let promptParts = [];
   promptParts.push(`Can you give me the notes to the song "${songData.title}"?`);
@@ -170,8 +168,7 @@ function buildMusicPrompt(songData, changes) {
   return promptParts.join("\n");
 }
 
-/* Extract what Claude has told us. Look for the notes JSON and for the time signature data.
- */
+// Extract what Claude has told us. Look for the notes JSON and for the time signature data.
 function extractMusicData(msg) {
   let notesJson, timeSignature, mode;
   let match = msg.match(/<notes>\s*([\s\S]*?)\s*<\/notes>/i);
@@ -282,6 +279,8 @@ function extractLyricsData(msg) {
 
   return { lyrics: lyricsArray, topic: topic };
 }
+
+/*** HELPER FUNCTIONS ***/
 
 /* For two objects which have the same properties, accumulate a set of properties whose values are different.
 */
