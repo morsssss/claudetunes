@@ -65,7 +65,7 @@ Of course, in either of those cases, use your actual API key, not "{your Anthrop
 1. Install dependencies: `npm install`
 1. Ensure your Anthropic API key is ready as described above.
 1. Start the development server: `npm run dev:all`
-4. Open your browser and navigate to `http://localhost:3001`
+4. Open your browser and navigate to `http://localhost:3000`
 
 ## Usage
 
